@@ -198,7 +198,17 @@ h2 {
   transition: border-color .18s ease, transform .18s ease, box-shadow .18s ease;
 }
 
-.song-row:hover { transform: translateY(-1px); box-shadow: 0 7px 20px rgba(26, 44, 36, .06); }
+.song-row {
+  width: 100%;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.song-row:hover { transform: translateY(-1px); border-color: #aeb8b0; box-shadow: 0 7px 20px rgba(26, 44, 36, .06); }
+.song-row:active { transform: scale(.992); }
+.song-row:focus-visible { outline-color: var(--green); }
 
 .song-row.is-selected {
   border-color: var(--green);
@@ -249,6 +259,9 @@ h2 {
 }
 
 .add-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   width: 30px;
   height: 30px;
   border-radius: 50%;

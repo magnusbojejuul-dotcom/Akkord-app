@@ -54,24 +54,29 @@ function renderSongs() {
   $('songList').innerHTML = filteredSongs.map(({ song, index }) => {
     const count = selectedCount(index);
     const imageBadge = song.images?.length ? '<span class="song-badge">Screenshot</span>' : '';
-    const selectedBadge = count ? `<span class="selected-badge">${count} valgt</span>` : '';
+    const selectedBadge = count ? '<span class="selected-badge">Valgt</span>' : '';
 
     return `
-      <div class="song-row ${count ? 'is-selected' : ''}">
+      <button type="button" class="song-row ${count ? 'is-selected' : ''}" data-toggle-song="${index}" aria-pressed="${count ? 'true' : 'false'}">
         <div class="song-meta">
           <div class="song-title">${song.title}</div>
           <div class="song-set">${song.set}${imageBadge}</div>
         </div>
         ${selectedBadge}
-        <button class="add-button ${count ? 'is-selected' : ''}" data-add="${index}" aria-label="Tilføj ${song.title}">
+        <span class="add-button ${count ? 'is-selected' : ''}" aria-hidden="true">
           ${count ? '✓' : '+'}
-        </button>
-      </div>`;
+        </span>
+      </button>`;
   }).join('') || '<div class="empty-state">Ingen sange fundet.</div>';
 
-  document.querySelectorAll('[data-add]').forEach((button) => {
-    button.onclick = () => {
-      setlist.push(Number(button.dataset.add));
+  document.querySelectorAll('[data-toggle-song]').forEach((songButton) => {
+    songButton.onclick = () => {
+      const songIndex = Number(songButton.dataset.toggleSong);
+      if (selectedCount(songIndex)) {
+        setlist = setlist.filter((index) => index !== songIndex);
+      } else {
+        setlist.push(songIndex);
+      }
       save();
       renderSongs();
       renderSetlist();
