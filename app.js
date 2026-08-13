@@ -39,6 +39,7 @@ const songs = [
 
 let setlist = JSON.parse(localStorage.getItem('tempo-setlist') || '[]');
 let activeIndex = 0;
+let swipeStart = null;
 
 const $ = (id) => document.getElementById(id);
 const save = () => localStorage.setItem('tempo-setlist', JSON.stringify(setlist));
@@ -182,6 +183,45 @@ function updateReader() {
   $('readerMain')?.scrollTo({ top: 0, behavior: 'instant' });
 }
 
+function navigateReader(offset) {
+  const nextIndex = activeIndex + offset;
+  if (nextIndex < 0 || nextIndex >= setlist.length) return;
+
+  activeIndex = nextIndex;
+  updateReader();
+
+  const article = $('readerMain').querySelector('article');
+  const animationClass = offset > 0 ? 'enters-from-right' : 'enters-from-left';
+  article.classList.remove('enters-from-left', 'enters-from-right');
+  void article.offsetWidth;
+  article.classList.add(animationClass);
+  article.addEventListener('animationend', () => article.classList.remove(animationClass), { once: true });
+}
+
+function startSwipe(event) {
+  if (event.pointerType === 'mouse' || !event.isPrimary) return;
+  swipeStart = {
+    pointerId: event.pointerId,
+    x: event.clientX,
+    y: event.clientY,
+    time: Date.now(),
+  };
+}
+
+function finishSwipe(event) {
+  if (!swipeStart || event.pointerId !== swipeStart.pointerId) return;
+
+  const distanceX = event.clientX - swipeStart.x;
+  const distanceY = event.clientY - swipeStart.y;
+  const elapsed = Date.now() - swipeStart.time;
+  swipeStart = null;
+
+  const isHorizontalSwipe = Math.abs(distanceX) >= 65 && Math.abs(distanceX) > Math.abs(distanceY) * 1.35;
+  if (!isHorizontalSwipe || elapsed > 1000) return;
+
+  navigateReader(distanceX < 0 ? 1 : -1);
+}
+
 $('search').oninput = renderSongs;
 $('playSetlist').onclick = openReader;
 $('closeReader').onclick = () => {
@@ -190,17 +230,19 @@ $('closeReader').onclick = () => {
   document.body.classList.remove('reader-open');
 };
 $('readerPrevious').onclick = () => {
-  if (activeIndex > 0) {
-    activeIndex -= 1;
-    updateReader();
-  }
+  navigateReader(-1);
 };
 $('readerNext').onclick = () => {
-  if (activeIndex < setlist.length - 1) {
-    activeIndex += 1;
-    updateReader();
-  }
+  navigateReader(1);
 };
+$('readerMain').addEventListener('pointerdown', startSwipe);
+$('readerMain').addEventListener('pointerup', finishSwipe);
+$('readerMain').addEventListener('pointercancel', () => { swipeStart = null; });
+document.addEventListener('keydown', (event) => {
+  if ($('reader').classList.contains('hidden')) return;
+  if (event.key === 'ArrowLeft') navigateReader(-1);
+  if (event.key === 'ArrowRight') navigateReader(1);
+});
 $('clearSetlist').onclick = () => {
   if (setlist.length && confirm('Tøm sætliste?')) {
     setlist = [];
