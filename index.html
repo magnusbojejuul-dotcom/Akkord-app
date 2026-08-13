@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="da">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0c1512">
+  <title>Tempo Sætliste</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="app-shell">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">TEMPO · LIVE MODE</p>
+        <h1>Min sætliste</h1>
+      </div>
+      <button class="icon-button" id="clearSetlist" title="Tøm sætliste" aria-label="Tøm sætliste">↺</button>
+    </header>
+
+    <section class="hero-card">
+      <div>
+        <span class="status-dot"></span><span id="songCount">0 sange valgt</span>
+        <h2>Klar til næste nummer?</h2>
+        <p>Vælg sange fra TEMPO-repertoiret og hold akkorderne lige ved hånden.</p>
+      </div>
+      <button class="primary-button" id="playSetlist">Spil sætliste <span>›</span></button>
+    </section>
+
+    <section class="selection-section">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">REPERTOIRE</p>
+          <h2>Vælg sange</h2>
+        </div>
+        <span class="pill">Sæt 1-3</span>
+      </div>
+      <label class="search">
+        <span>⌕</span>
+        <input id="search" type="search" placeholder="Søg efter sang..." autocomplete="off">
+      </label>
+      <div id="songList" class="song-list"></div>
+    </section>
+
+    <section class="setlist-section">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">DIN RÆKKEFØLGE</p>
+          <h2>Sætlisten</h2>
+        </div>
+        <span class="pill" id="setlistPill">0</span>
+      </div>
+      <div id="setlist" class="setlist empty-state">Tilføj sange ovenfor for at bygge din sætliste.</div>
+    </section>
+  </main>
+
+  <div id="reader" class="reader hidden" aria-hidden="true">
+    <div class="reader-top">
+      <button id="closeReader" class="reader-close">×</button>
+      <span id="readerPosition"></span>
+      <button id="readerNext" class="reader-next">Næste ›</button>
+    </div>
+    <article>
+      <p class="eyebrow" id="readerSet"></p>
+      <h2 id="readerTitle"></h2>
+      <div id="readerChords" class="reader-chords"></div>
+    </article>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>
