@@ -132,6 +132,34 @@ function openReader() {
   updateReader();
   $('reader').classList.remove('hidden');
   $('reader').setAttribute('aria-hidden', 'false');
+  document.body.classList.add('reader-open');
+}
+
+function renderReaderQueue() {
+  $('readerQueue').innerHTML = setlist.map((songIndex, index) => {
+    const state = index < activeIndex ? 'is-past' : index === activeIndex ? 'is-active' : 'is-upcoming';
+    const marker = index < activeIndex ? '✓' : String(index + 1).padStart(2, '0');
+
+    return `
+      <button class="queue-song ${state}" data-reader-index="${index}" ${index === activeIndex ? 'aria-current="step"' : ''}>
+        <span class="queue-number">${marker}</span>
+        <span class="queue-copy">
+          <strong>${songs[songIndex].title}</strong>
+          <small>${index < activeIndex ? 'Spillet' : index === activeIndex ? 'Spiller nu' : songs[songIndex].set}</small>
+        </span>
+      </button>`;
+  }).join('');
+
+  document.querySelectorAll('[data-reader-index]').forEach((button) => {
+    button.onclick = () => {
+      activeIndex = Number(button.dataset.readerIndex);
+      updateReader();
+    };
+  });
+
+  requestAnimationFrame(() => {
+    document.querySelector('.queue-song.is-active')?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+  });
 }
 
 function updateReader() {
@@ -143,10 +171,15 @@ function updateReader() {
     ? `<div class="reader-images">${song.images.map((src) => `<img src="${src}" alt="Screenshot af akkorder til ${song.title}">`).join('')}</div>`
     : '';
 
-  $('readerSet').textContent = `${song.set} · ${activeIndex + 1} af ${setlist.length}`;
-  $('readerPosition').textContent = `${activeIndex + 1} / ${setlist.length}`;
+  $('readerSet').textContent = `${song.set} · SPILLER NU`;
+  $('readerPosition').textContent = `Nummer ${activeIndex + 1} af ${setlist.length}`;
   $('readerTitle').textContent = song.title;
   $('readerChords').innerHTML = chordLines + screenshots;
+  $('readerProgressBar').style.width = `${((activeIndex + 1) / setlist.length) * 100}%`;
+  $('readerPrevious').disabled = activeIndex === 0;
+  $('readerNext').disabled = activeIndex === setlist.length - 1;
+  renderReaderQueue();
+  $('readerMain')?.scrollTo({ top: 0, behavior: 'instant' });
 }
 
 $('search').oninput = renderSongs;
@@ -154,6 +187,13 @@ $('playSetlist').onclick = openReader;
 $('closeReader').onclick = () => {
   $('reader').classList.add('hidden');
   $('reader').setAttribute('aria-hidden', 'true');
+  document.body.classList.remove('reader-open');
+};
+$('readerPrevious').onclick = () => {
+  if (activeIndex > 0) {
+    activeIndex -= 1;
+    updateReader();
+  }
 };
 $('readerNext').onclick = () => {
   if (activeIndex < setlist.length - 1) {

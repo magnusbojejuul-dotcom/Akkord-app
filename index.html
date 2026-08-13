@@ -54,16 +54,35 @@
   </main>
 
   <div id="reader" class="reader hidden" aria-hidden="true">
-    <div class="reader-top">
-      <button id="closeReader" class="reader-close">×</button>
-      <span id="readerPosition"></span>
-      <button id="readerNext" class="reader-next">Næste ›</button>
+    <div class="reader-layout">
+      <aside class="reader-queue" aria-label="Sætliste">
+        <div class="reader-brand">
+          <span class="reader-live-dot"></span>
+          <div>
+            <p class="eyebrow">TEMPO · LIVE</p>
+            <h2>Sætliste</h2>
+          </div>
+        </div>
+        <div class="reader-progress" aria-hidden="true">
+          <span id="readerProgressBar"></span>
+        </div>
+        <nav id="readerQueue" class="reader-queue-list"></nav>
+        <button id="closeReader" class="reader-exit">Afslut spillevisning</button>
+      </aside>
+
+      <main id="readerMain" class="reader-main">
+        <div class="reader-top">
+          <button id="readerPrevious" class="reader-nav-button">‹ Forrige</button>
+          <span id="readerPosition" class="reader-position"></span>
+          <button id="readerNext" class="reader-nav-button reader-next">Næste ›</button>
+        </div>
+        <article>
+          <p class="eyebrow" id="readerSet"></p>
+          <h2 id="readerTitle"></h2>
+          <div id="readerChords" class="reader-chords"></div>
+        </article>
+      </main>
     </div>
-    <article>
-      <p class="eyebrow" id="readerSet"></p>
-      <h2 id="readerTitle"></h2>
-      <div id="readerChords" class="reader-chords"></div>
-    </article>
   </div>
   <script src="app.js"></script>
 </body>
