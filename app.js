@@ -104,10 +104,14 @@ const extraSongs = [
 // Ekstranumrene tilføjes efter de faste sæt, så eksisterende gemte sangindekser bevares.
 songs.push(...extraSongs);
 
+const ZOOM_STORAGE_KEY = 'tempo-song-zoom-v2';
+const DEFAULT_ZOOM = 0.7;
+
 let setlist = JSON.parse(localStorage.getItem('tempo-setlist') || '[]');
-let songZooms = JSON.parse(localStorage.getItem('tempo-song-zoom') || '{}');
+let songZooms = JSON.parse(localStorage.getItem(ZOOM_STORAGE_KEY) || '{}');
 let activeIndex = 0;
 let swipeStart = null;
+let touchSwipeStart = null;
 
 const ZOOM_MIN = 0.7;
 const ZOOM_MAX = 1.6;
@@ -115,12 +119,12 @@ const ZOOM_STEP = 0.1;
 
 const $ = (id) => document.getElementById(id);
 const save = () => localStorage.setItem('tempo-setlist', JSON.stringify(setlist));
-const saveZooms = () => localStorage.setItem('tempo-song-zoom', JSON.stringify(songZooms));
+const saveZooms = () => localStorage.setItem(ZOOM_STORAGE_KEY, JSON.stringify(songZooms));
 const selectedCount = (songIndex) => setlist.filter((idx) => idx === songIndex).length;
 
 function getSongZoom(songIndex) {
   const storedZoom = Number(songZooms[songIndex]);
-  return storedZoom >= ZOOM_MIN && storedZoom <= ZOOM_MAX ? storedZoom : 1;
+  return storedZoom >= ZOOM_MIN && storedZoom <= ZOOM_MAX ? storedZoom : DEFAULT_ZOOM;
 }
 
 function applyReaderZoom(songIndex = setlist[activeIndex]) {
@@ -359,28 +363,75 @@ function navigateReader(offset) {
   article.addEventListener('animationend', () => article.classList.remove(animationClass), { once: true });
 }
 
-function startSwipe(event) {
-  if (event.pointerType === 'mouse' || !event.isPrimary) return;
-  swipeStart = {
-    pointerId: event.pointerId,
-    x: event.clientX,
-    y: event.clientY,
+function createSwipeStart(x, y, id, target) {
+  const imageScroller = target instanceof Element ? target.closest('.reader-images') : null;
+
+  return {
+    id,
+    x,
+    y,
     time: Date.now(),
+    imageScroller,
+    imageScrollLeft: imageScroller?.scrollLeft || 0,
+    imageMaxScroll: imageScroller
+      ? Math.max(0, imageScroller.scrollWidth - imageScroller.clientWidth)
+      : 0,
   };
 }
 
-function finishSwipe(event) {
-  if (!swipeStart || event.pointerId !== swipeStart.pointerId) return;
-
-  const distanceX = event.clientX - swipeStart.x;
-  const distanceY = event.clientY - swipeStart.y;
-  const elapsed = Date.now() - swipeStart.time;
-  swipeStart = null;
+function finishSwipeGesture(start, x, y) {
+  const distanceX = x - start.x;
+  const distanceY = y - start.y;
+  const elapsed = Date.now() - start.time;
 
   const isHorizontalSwipe = Math.abs(distanceX) >= 65 && Math.abs(distanceX) > Math.abs(distanceY) * 1.35;
   if (!isHorizontalSwipe || elapsed > 1000) return;
 
-  navigateReader(distanceX < 0 ? 1 : -1);
+  const direction = distanceX < 0 ? 1 : -1;
+
+  // På et forstørret screenshot panorerer swipet billedet først. Ved billedets
+  // kant skifter det næste swipe sang, ligesom på almindelige akkordfelter.
+  if (start.imageScroller && start.imageMaxScroll > 2) {
+    const atLeftEdge = start.imageScrollLeft <= 2;
+    const atRightEdge = start.imageScrollLeft >= start.imageMaxScroll - 2;
+    const shouldPanImage = direction > 0 ? !atRightEdge : !atLeftEdge;
+    if (shouldPanImage) return;
+  }
+
+  navigateReader(direction);
+}
+
+function startSwipe(event) {
+  if (event.pointerType === 'touch' || !event.isPrimary) return;
+  swipeStart = createSwipeStart(event.clientX, event.clientY, event.pointerId, event.target);
+}
+
+function finishSwipe(event) {
+  if (!swipeStart || event.pointerId !== swipeStart.id) return;
+  const start = swipeStart;
+  swipeStart = null;
+  finishSwipeGesture(start, event.clientX, event.clientY);
+}
+
+function startTouchSwipe(event) {
+  if (event.touches.length !== 1) {
+    touchSwipeStart = null;
+    return;
+  }
+
+  const touch = event.touches[0];
+  touchSwipeStart = createSwipeStart(touch.clientX, touch.clientY, touch.identifier, event.target);
+}
+
+function finishTouchSwipe(event) {
+  if (!touchSwipeStart) return;
+
+  const touch = Array.from(event.changedTouches).find(({ identifier }) => identifier === touchSwipeStart.id);
+  if (!touch) return;
+
+  const start = touchSwipeStart;
+  touchSwipeStart = null;
+  finishSwipeGesture(start, touch.clientX, touch.clientY);
 }
 
 $('search').oninput = renderSongs;
@@ -408,6 +459,9 @@ document.addEventListener('webkitfullscreenchange', updateFullscreenButton);
 $('readerMain').addEventListener('pointerdown', startSwipe);
 $('readerMain').addEventListener('pointerup', finishSwipe);
 $('readerMain').addEventListener('pointercancel', () => { swipeStart = null; });
+$('readerMain').addEventListener('touchstart', startTouchSwipe, { passive: true });
+$('readerMain').addEventListener('touchend', finishTouchSwipe, { passive: true });
+$('readerMain').addEventListener('touchcancel', () => { touchSwipeStart = null; }, { passive: true });
 document.addEventListener('keydown', (event) => {
   if ($('reader').classList.contains('hidden')) return;
   if (event.key === 'ArrowLeft') navigateReader(-1);

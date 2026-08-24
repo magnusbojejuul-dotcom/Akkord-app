@@ -607,9 +607,9 @@ h2 {
 }
 
 .reader-chords {
-  --content-scale: 1;
-  --content-width: 100%;
-  --image-max-height: 82vh;
+  --content-scale: .7;
+  --content-width: 70%;
+  --image-max-height: 57.4vh;
   display: flex;
   flex-direction: column;
   gap: 0;
