@@ -358,16 +358,55 @@ h2 {
 
 .set-row { cursor: grab; }
 
+.set-row.is-dragging { opacity: .45; }
+
+.set-row.is-drop-target {
+  border-color: var(--green);
+  box-shadow: 0 0 0 3px rgba(35, 71, 55, .12);
+}
+
 .drag-handle {
   color: #a3aaa2;
   font-size: 1.1rem;
 }
 
+.set-actions,
+.set-move-controls {
+  display: flex;
+  align-items: center;
+}
+
+.set-actions { gap: 7px; }
+.set-move-controls { gap: 4px; }
+
+.move-button,
+.remove-button {
+  width: 36px;
+  height: 36px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 9px;
+  flex: 0 0 auto;
+  line-height: 1;
+}
+
+.move-button {
+  border: 1px solid var(--line);
+  background: var(--bg);
+  color: var(--green);
+  font-size: 1rem;
+  font-weight: 850;
+}
+
+.move-button:hover:not(:disabled) { border-color: var(--green); }
+.move-button:active:not(:disabled) { transform: scale(.94); }
+.move-button:disabled { opacity: .28; cursor: default; }
+
 .remove-button {
   border: 0;
   background: transparent;
   color: var(--muted);
-  font-size: 1.2rem;
+  font-size: 1.25rem;
 }
 
 .empty-state {
@@ -729,6 +768,11 @@ h2 {
   }
   .song-list { grid-template-columns: 1fr; }
   .selected-badge { display: none; }
+  .set-row { padding: 11px; gap: 8px; }
+  .set-row .drag-handle { display: none; }
+  .set-actions { gap: 3px; }
+  .move-button,
+  .remove-button { width: 40px; height: 40px; }
   .reader-layout { display: flex; flex-direction: column; }
   .reader-queue { flex: 0 0 auto; padding: 12px 14px 10px; border-right: 0; border-bottom: 1px solid rgba(255, 255, 255, .09); }
   .reader-brand, .reader-progress, .reader-exit { display: none; }

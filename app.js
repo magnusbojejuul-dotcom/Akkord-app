@@ -238,6 +238,16 @@ function renderSongs() {
   });
 }
 
+function moveSetlistItem(from, to) {
+  if (from < 0 || to < 0 || from >= setlist.length || to >= setlist.length || from === to) return;
+
+  const [item] = setlist.splice(from, 1);
+  setlist.splice(to, 0, item);
+  save();
+  renderSongs();
+  renderSetlist();
+}
+
 function renderSetlist() {
   $('songCount').textContent = `${setlist.length} ${setlist.length === 1 ? 'sang' : 'sange'} valgt`;
   $('setlistPill').textContent = setlist.length;
@@ -253,13 +263,27 @@ function renderSetlist() {
   el.className = 'setlist';
   el.innerHTML = setlist.map((idx, pos) => `
     <div class="set-row" draggable="true" data-pos="${pos}">
-      <span class="drag-handle">☷</span>
+      <span class="drag-handle" aria-hidden="true">☷</span>
       <div class="song-meta">
         <div class="song-title">${songs[idx].title}</div>
         <div class="song-set">${songs[idx].set}</div>
       </div>
-      <button class="remove-button" data-remove="${pos}" aria-label="Fjern">×</button>
+      <div class="set-actions">
+        <div class="set-move-controls" role="group" aria-label="Flyt ${songs[idx].title}">
+          <button type="button" class="move-button" data-move-up="${pos}" aria-label="Flyt ${songs[idx].title} op" ${pos === 0 ? 'disabled' : ''}>↑</button>
+          <button type="button" class="move-button" data-move-down="${pos}" aria-label="Flyt ${songs[idx].title} ned" ${pos === setlist.length - 1 ? 'disabled' : ''}>↓</button>
+        </div>
+        <button type="button" class="remove-button" data-remove="${pos}" aria-label="Fjern ${songs[idx].title}">×</button>
+      </div>
     </div>`).join('');
+
+  document.querySelectorAll('[data-move-up]').forEach((button) => {
+    button.onclick = () => moveSetlistItem(Number(button.dataset.moveUp), Number(button.dataset.moveUp) - 1);
+  });
+
+  document.querySelectorAll('[data-move-down]').forEach((button) => {
+    button.onclick = () => moveSetlistItem(Number(button.dataset.moveDown), Number(button.dataset.moveDown) + 1);
+  });
 
   document.querySelectorAll('[data-remove]').forEach((button) => {
     button.onclick = () => {
@@ -272,17 +296,29 @@ function renderSetlist() {
 
   let dragged = null;
   document.querySelectorAll('.set-row').forEach((row) => {
-    row.ondragstart = () => {
+    row.ondragstart = (event) => {
       dragged = Number(row.dataset.pos);
+      row.classList.add('is-dragging');
+      event.dataTransfer.effectAllowed = 'move';
+      event.dataTransfer.setData('text/plain', String(dragged));
     };
-    row.ondragover = (event) => event.preventDefault();
-    row.ondrop = () => {
+    row.ondragend = () => {
+      dragged = null;
+      document.querySelectorAll('.set-row').forEach((item) => item.classList.remove('is-dragging', 'is-drop-target'));
+    };
+    row.ondragenter = () => row.classList.add('is-drop-target');
+    row.ondragleave = (event) => {
+      if (!row.contains(event.relatedTarget)) row.classList.remove('is-drop-target');
+    };
+    row.ondragover = (event) => {
+      event.preventDefault();
+      event.dataTransfer.dropEffect = 'move';
+    };
+    row.ondrop = (event) => {
+      event.preventDefault();
       const to = Number(row.dataset.pos);
-      const item = setlist.splice(dragged, 1)[0];
-      setlist.splice(to, 0, item);
-      save();
-      renderSongs();
-      renderSetlist();
+      const from = dragged ?? Number(event.dataTransfer.getData('text/plain'));
+      moveSetlistItem(from, to);
     };
   });
 }

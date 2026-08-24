@@ -10,7 +10,7 @@ Appen indeholder de tre hovedsæt (`Sæt 1`, `Sæt 2`, `Sæt 3`) samt 61 unikke 
 
 ## Brug
 
-Åbn `index.html` i en browser. Tryk på hele sangfeltet for at vælge eller fravælge en sang, træk sangene i rækkefølge, og tryk **Spil sætliste** for en stor læsevisning. Spillevisningen har fullscreen og sangspecifik zoom fra 70–160 % til både tekstakkorder og screenshots. Sætlisten og zoomniveauerne gemmes lokalt på enheden.
+Åbn `index.html` i en browser. Tryk på hele sangfeltet for at vælge eller fravælge en sang, træk sangene i rækkefølge på en computer eller brug op/ned-knapperne på touch, og tryk **Spil sætliste** for en stor læsevisning. Spillevisningen har fullscreen og sangspecifik zoom fra 70–160 % til både tekstakkorder og screenshots. Sætlisten og zoomniveauerne gemmes lokalt på enheden.
 
 ## GitHub Desktop
 
