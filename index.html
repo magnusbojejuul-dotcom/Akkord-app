@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#0c1512">
   <title>Tempo Sætliste</title>
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles.css?v=20260824-4">
 </head>
 <body>
   <main class="app-shell">
@@ -39,6 +39,20 @@
         <input id="search" type="search" placeholder="Søg efter sang..." autocomplete="off">
       </label>
       <div id="songList" class="song-list"></div>
+
+      <details id="extrasDetails" class="extras-panel">
+        <summary>
+          <span class="extras-summary-copy">
+            <span class="extras-icon" aria-hidden="true">＋</span>
+            <span>
+              <strong>Evt. ekstranumre</strong>
+              <small id="extraSongCount">0 sange</small>
+            </span>
+          </span>
+          <span class="extras-chevron" aria-hidden="true">⌄</span>
+        </summary>
+        <div id="extraSongList" class="song-list extra-song-list"></div>
+      </details>
     </section>
 
     <section class="setlist-section">
@@ -72,21 +86,33 @@
 
       <main id="readerMain" class="reader-main">
         <div class="reader-top">
-          <button id="readerPrevious" class="reader-nav-button">‹ Forrige</button>
-          <span id="readerPosition" class="reader-position"></span>
-          <button id="readerNext" class="reader-nav-button reader-next">Næste ›</button>
+          <div class="reader-navigation">
+            <button id="readerPrevious" class="reader-nav-button">‹ Forrige</button>
+            <span id="readerPosition" class="reader-position"></span>
+            <button id="readerNext" class="reader-nav-button reader-next">Næste ›</button>
+          </div>
+          <div class="reader-tools" aria-label="Visningsindstillinger">
+            <button id="toggleFullscreen" class="reader-tool-button" type="button" aria-pressed="false">
+              <span aria-hidden="true">⛶</span><span id="fullscreenLabel">Fuld skærm</span>
+            </button>
+            <div class="zoom-control" aria-label="Størrelse på akkorder og billeder">
+              <button id="zoomOut" type="button" aria-label="Formindsk akkorder og billeder">−</button>
+              <output id="zoomValue" aria-live="polite">100%</output>
+              <button id="zoomIn" type="button" aria-label="Forstør akkorder og billeder">+</button>
+            </div>
+          </div>
+        </div>
+        <div class="reader-swipe-hint" aria-hidden="true">
+          <span>←</span> Stryg for at skifte sang <span>→</span>
         </div>
         <article>
           <p class="eyebrow" id="readerSet"></p>
           <h2 id="readerTitle"></h2>
           <div id="readerChords" class="reader-chords"></div>
         </article>
-        <div class="reader-swipe-hint" aria-hidden="true">
-          <span>←</span> Stryg for at skifte sang <span>→</span>
-        </div>
       </main>
     </div>
   </div>
-  <script src="app.js"></script>
+  <script src="app.js?v=20260824-4"></script>
 </body>
 </html>

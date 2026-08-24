@@ -6,11 +6,11 @@ En tabletvenlig, offline sætliste til TEMPO. Appen er bygget som en enkel stati
 
 Sangene er udledt læsebaseret fra Google Doc'et **Akkorder** (dokument-id `1s8LKKizby6CfSXLITCgG_BpYtmojzvCWqHKvZXi0px0`). Originaldokumentet er ikke redigeret.
 
-Appen indeholder kun de tre hovedsæt (`Sæt 1`, `Sæt 2`, `Sæt 3`); ekstranumre er ikke blandet ind i hovedlisten. Screenshots fra dokumentet er udtrukket lokalt til `assets/screenshots/` og knyttet til de sange, hvor de optræder i hovedsættene.
+Appen indeholder de tre hovedsæt (`Sæt 1`, `Sæt 2`, `Sæt 3`) samt 61 unikke sange fra dokumentets afsnit **Evt. ekstranumre**. Ekstranumrene ligger i deres egen foldbare kategori og er ikke blandet ind i hovedlisten. Screenshots fra dokumentet er udtrukket lokalt til `assets/screenshots/` og knyttet til de relevante sange.
 
 ## Brug
 
-Åbn `index.html` i en browser. Vælg sange med plus-knappen, træk dem i rækkefølge, og tryk **Spil sætliste** for en stor læsevisning. Sætlisten gemmes lokalt på enheden.
+Åbn `index.html` i en browser. Tryk på hele sangfeltet for at vælge eller fravælge en sang, træk sangene i rækkefølge, og tryk **Spil sætliste** for en stor læsevisning. Spillevisningen har fullscreen og sangspecifik zoom fra 70–160 % til både tekstakkorder og screenshots. Sætlisten og zoomniveauerne gemmes lokalt på enheden.
 
 ## GitHub Desktop
 
