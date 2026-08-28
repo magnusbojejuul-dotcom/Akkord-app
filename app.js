@@ -28,7 +28,7 @@ const songs = [
   { set: 'Sæt 3', title: 'Happy', lines: ['Vers: Fm ...', 'Omk: C# - Cm - Cm - F'] },
   { set: 'Sæt 3', title: 'Let me entertain you', lines: ['Vers: F', 'Omk: F - G# - Bb'] },
   { set: 'Sæt 3', title: 'Love story', lines: [], images: ['assets/screenshots/love-story-1.png', 'assets/screenshots/love-story-2.png', 'assets/screenshots/love-story-3.png'] },
-  { set: 'Sæt 3', title: 'Mucki Bar', lines: ['Emol - C# - F# - D#', 'Magnus omk: E - G# - B - C# - F# - G# - C# - D'] },
+  { set: 'Sæt 3', title: 'Mucki Bar', lines: ['Emol - C# - F# - D#', 'Magnus omk: E - G# - B - C# - F# - G# - C# - D#'] },
   { set: 'Sæt 3', title: 'Gimme Gimme Gimme', lines: ['Husk oktaver', 'Intro: D - E (kort overgang) - F - G (overgang) - A - D', 'Versintro med melodien: D - C - A - G - F', 'Vers: G - F (kort) - G - C (kort) - D x2', 'Pre-chorus: Bb - G - G - A', 'Omk: D - Bb - C - D - Bb - D - C - D', 'Bro x4: D (lyt efter)'] },
   { set: 'Sæt 3', title: 'Low', lines: ['D# - B - Bb'] },
   { set: 'Sæt 3', title: 'Kom tilbage nu', lines: ['Vers: Am - F - G - A', 'Bridge: A - B - D# - E', 'Omk: Dm - G - Am'] },
@@ -112,6 +112,7 @@ let songZooms = JSON.parse(localStorage.getItem(ZOOM_STORAGE_KEY) || '{}');
 let activeIndex = 0;
 let swipeStart = null;
 let touchSwipeStart = null;
+let pinchGesture = null;
 
 const ZOOM_MIN = 0.7;
 const ZOOM_MAX = 1.6;
@@ -125,6 +126,10 @@ const selectedCount = (songIndex) => setlist.filter((idx) => idx === songIndex).
 function getSongZoom(songIndex) {
   const storedZoom = Number(songZooms[songIndex]);
   return storedZoom >= ZOOM_MIN && storedZoom <= ZOOM_MAX ? storedZoom : DEFAULT_ZOOM;
+}
+
+function clampZoom(zoom) {
+  return Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, zoom));
 }
 
 function applyReaderZoom(songIndex = setlist[activeIndex]) {
@@ -143,14 +148,65 @@ function changeReaderZoom(direction) {
   const songIndex = setlist[activeIndex];
   if (songIndex === undefined) return;
 
-  const nextZoom = Math.min(ZOOM_MAX, Math.max(
-    ZOOM_MIN,
-    Number((getSongZoom(songIndex) + direction * ZOOM_STEP).toFixed(1)),
-  ));
+  const nextZoom = clampZoom(Number((getSongZoom(songIndex) + direction * ZOOM_STEP).toFixed(1)));
 
   songZooms[songIndex] = nextZoom;
   saveZooms();
   applyReaderZoom(songIndex);
+}
+
+function touchDistance(touches) {
+  const first = touches[0];
+  const second = touches[1];
+  return Math.hypot(second.clientX - first.clientX, second.clientY - first.clientY);
+}
+
+function zoomFromPinch(startZoom, startDistance, currentDistance) {
+  return clampZoom(startZoom * (currentDistance / startDistance));
+}
+
+function startPinchZoom(event) {
+  if (event.touches.length !== 2) return;
+
+  const songIndex = setlist[activeIndex];
+  const distance = touchDistance(event.touches);
+  if (songIndex === undefined || distance < 10) return;
+
+  pinchGesture = {
+    songIndex,
+    startDistance: distance,
+    startZoom: getSongZoom(songIndex),
+    changed: false,
+  };
+  touchSwipeStart = null;
+  $('readerChords').classList.add('is-pinching');
+  event.preventDefault();
+}
+
+function movePinchZoom(event) {
+  if (!pinchGesture || event.touches.length !== 2) return;
+
+  const distance = touchDistance(event.touches);
+  const nextZoom = zoomFromPinch(pinchGesture.startZoom, pinchGesture.startDistance, distance);
+  const roundedZoom = Number(nextZoom.toFixed(2));
+
+  if (Math.abs(getSongZoom(pinchGesture.songIndex) - roundedZoom) >= 0.01) {
+    songZooms[pinchGesture.songIndex] = roundedZoom;
+    pinchGesture.changed = true;
+    applyReaderZoom(pinchGesture.songIndex);
+  }
+
+  event.preventDefault();
+}
+
+function finishPinchZoom(event) {
+  if (!pinchGesture || event.touches.length >= 2) return;
+
+  if (pinchGesture.changed) saveZooms();
+  pinchGesture = null;
+  touchSwipeStart = null;
+  $('readerChords').classList.remove('is-pinching');
+  event.preventDefault();
 }
 
 function fullscreenElement() {
@@ -360,6 +416,9 @@ function renderReaderQueue() {
 }
 
 function updateReader() {
+  pinchGesture = null;
+  touchSwipeStart = null;
+  $('readerChords').classList.remove('is-pinching');
   const songIndex = setlist[activeIndex];
   const song = songs[songIndex];
   const chordLines = song.lines.length
@@ -498,6 +557,10 @@ $('readerMain').addEventListener('pointercancel', () => { swipeStart = null; });
 $('readerMain').addEventListener('touchstart', startTouchSwipe, { passive: true });
 $('readerMain').addEventListener('touchend', finishTouchSwipe, { passive: true });
 $('readerMain').addEventListener('touchcancel', () => { touchSwipeStart = null; }, { passive: true });
+$('readerMain').addEventListener('touchstart', startPinchZoom, { passive: false });
+$('readerMain').addEventListener('touchmove', movePinchZoom, { passive: false });
+$('readerMain').addEventListener('touchend', finishPinchZoom, { passive: false });
+$('readerMain').addEventListener('touchcancel', finishPinchZoom, { passive: false });
 document.addEventListener('keydown', (event) => {
   if ($('reader').classList.contains('hidden')) return;
   if (event.key === 'ArrowLeft') navigateReader(-1);

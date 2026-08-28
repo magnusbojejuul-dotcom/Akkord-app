@@ -659,6 +659,12 @@ h2 {
   );
   line-height: 1.48;
   color: #d5e1d7;
+  touch-action: pan-x pan-y;
+}
+
+.reader-chords.is-pinching {
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .reader-chords > div:not(.reader-images) {
