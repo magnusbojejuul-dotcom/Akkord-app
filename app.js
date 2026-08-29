@@ -105,23 +105,32 @@ const extraSongs = [
 // Ekstranumrene tilføjes efter de faste sæt, så eksisterende gemte sangindekser bevares.
 songs.push(...extraSongs);
 
-const ZOOM_STORAGE_KEY = 'tempo-song-zoom-v2';
+const LEGACY_ZOOM_STORAGE_KEY = 'tempo-song-zoom-v2';
+const ZOOM_STORAGE_KEY = 'tempo-reader-zoom-v1';
 const SONG_INDEX_SCHEMA_KEY = 'tempo-song-index-schema';
 const SONG_INDEX_SCHEMA_VERSION = '2';
 const DEFAULT_ZOOM = 0.7;
+const ZOOM_MIN = 0.7;
+const ZOOM_MAX = 1.6;
+const ZOOM_STEP = 0.1;
 
 let setlist = JSON.parse(localStorage.getItem('tempo-setlist') || '[]');
-let songZooms = JSON.parse(localStorage.getItem(ZOOM_STORAGE_KEY) || '{}');
+const legacySongZooms = JSON.parse(localStorage.getItem(LEGACY_ZOOM_STORAGE_KEY) || '{}');
+const legacyZoom = Object.values(legacySongZooms)
+  .map(Number)
+  .find((zoom) => zoom >= ZOOM_MIN && zoom <= ZOOM_MAX);
+let readerZoom = Number(localStorage.getItem(ZOOM_STORAGE_KEY));
+
+if (readerZoom < ZOOM_MIN || readerZoom > ZOOM_MAX) {
+  readerZoom = legacyZoom || DEFAULT_ZOOM;
+  localStorage.setItem(ZOOM_STORAGE_KEY, String(readerZoom));
+}
 
 // Brudevalsen blev indsat som første sang. Flyt gamle gemte indeks én plads,
-// så eksisterende sætlister og sangspecifik zoom stadig rammer samme sange.
+// så eksisterende sætlister stadig rammer samme sange.
 if (localStorage.getItem(SONG_INDEX_SCHEMA_KEY) !== SONG_INDEX_SCHEMA_VERSION) {
   setlist = setlist.map((songIndex) => Number(songIndex) + 1);
-  songZooms = Object.fromEntries(
-    Object.entries(songZooms).map(([songIndex, zoom]) => [String(Number(songIndex) + 1), zoom]),
-  );
   localStorage.setItem('tempo-setlist', JSON.stringify(setlist));
-  localStorage.setItem(ZOOM_STORAGE_KEY, JSON.stringify(songZooms));
   localStorage.setItem(SONG_INDEX_SCHEMA_KEY, SONG_INDEX_SCHEMA_VERSION);
 }
 
@@ -130,26 +139,21 @@ let swipeStart = null;
 let touchSwipeStart = null;
 let pinchGesture = null;
 
-const ZOOM_MIN = 0.7;
-const ZOOM_MAX = 1.6;
-const ZOOM_STEP = 0.1;
-
 const $ = (id) => document.getElementById(id);
 const save = () => localStorage.setItem('tempo-setlist', JSON.stringify(setlist));
-const saveZooms = () => localStorage.setItem(ZOOM_STORAGE_KEY, JSON.stringify(songZooms));
+const saveZoom = () => localStorage.setItem(ZOOM_STORAGE_KEY, String(readerZoom));
 const selectedCount = (songIndex) => setlist.filter((idx) => idx === songIndex).length;
 
-function getSongZoom(songIndex) {
-  const storedZoom = Number(songZooms[songIndex]);
-  return storedZoom >= ZOOM_MIN && storedZoom <= ZOOM_MAX ? storedZoom : DEFAULT_ZOOM;
+function getReaderZoom() {
+  return readerZoom >= ZOOM_MIN && readerZoom <= ZOOM_MAX ? readerZoom : DEFAULT_ZOOM;
 }
 
 function clampZoom(zoom) {
   return Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, zoom));
 }
 
-function applyReaderZoom(songIndex = setlist[activeIndex]) {
-  const zoom = getSongZoom(songIndex);
+function applyReaderZoom() {
+  const zoom = getReaderZoom();
   $('readerChords').style.setProperty('--content-scale', zoom);
   $('readerChords').style.setProperty('--content-width', `${Math.round(zoom * 100)}%`);
   $('readerChords').style.setProperty('--image-max-height', `${82 * zoom}vh`);
@@ -161,14 +165,11 @@ function applyReaderZoom(songIndex = setlist[activeIndex]) {
 }
 
 function changeReaderZoom(direction) {
-  const songIndex = setlist[activeIndex];
-  if (songIndex === undefined) return;
+  const nextZoom = clampZoom(Number((getReaderZoom() + direction * ZOOM_STEP).toFixed(1)));
 
-  const nextZoom = clampZoom(Number((getSongZoom(songIndex) + direction * ZOOM_STEP).toFixed(1)));
-
-  songZooms[songIndex] = nextZoom;
-  saveZooms();
-  applyReaderZoom(songIndex);
+  readerZoom = nextZoom;
+  saveZoom();
+  applyReaderZoom();
 }
 
 function touchDistance(touches) {
@@ -184,14 +185,12 @@ function zoomFromPinch(startZoom, startDistance, currentDistance) {
 function startPinchZoom(event) {
   if (event.touches.length !== 2) return;
 
-  const songIndex = setlist[activeIndex];
   const distance = touchDistance(event.touches);
-  if (songIndex === undefined || distance < 10) return;
+  if (setlist[activeIndex] === undefined || distance < 10) return;
 
   pinchGesture = {
-    songIndex,
     startDistance: distance,
-    startZoom: getSongZoom(songIndex),
+    startZoom: getReaderZoom(),
     changed: false,
   };
   touchSwipeStart = null;
@@ -206,10 +205,10 @@ function movePinchZoom(event) {
   const nextZoom = zoomFromPinch(pinchGesture.startZoom, pinchGesture.startDistance, distance);
   const roundedZoom = Number(nextZoom.toFixed(2));
 
-  if (Math.abs(getSongZoom(pinchGesture.songIndex) - roundedZoom) >= 0.01) {
-    songZooms[pinchGesture.songIndex] = roundedZoom;
+  if (Math.abs(getReaderZoom() - roundedZoom) >= 0.01) {
+    readerZoom = roundedZoom;
     pinchGesture.changed = true;
-    applyReaderZoom(pinchGesture.songIndex);
+    applyReaderZoom();
   }
 
   event.preventDefault();
@@ -218,7 +217,7 @@ function movePinchZoom(event) {
 function finishPinchZoom(event) {
   if (!pinchGesture || event.touches.length >= 2) return;
 
-  if (pinchGesture.changed) saveZooms();
+  if (pinchGesture.changed) saveZoom();
   pinchGesture = null;
   touchSwipeStart = null;
   $('readerChords').classList.remove('is-pinching');
@@ -444,7 +443,7 @@ function updateReader() {
     : '<div>Ingen tekstakkorder er noteret.</div>';
   const screenshots = song.images?.length
     ? `<div class="reader-images">${song.images.map((src) => song.imageMode === 'sheet-photo'
-      ? `<div class="reader-image-crop is-sheet-photo"><img src="${src}" alt="Screenshot af akkorder til ${song.title}"></div>`
+      ? `<button type="button" class="reader-image-crop is-sheet-photo" data-fullscreen-image="${src}" aria-label="Vis hele billedet til ${song.title} i fuld skærm"><img src="${src}" alt="Screenshot af akkorder til ${song.title}"><span class="reader-image-open-hint" aria-hidden="true">⛶ Vis i fuld skærm</span></button>`
       : `<img src="${src}" alt="Screenshot af akkorder til ${song.title}">`).join('')}</div>`
     : '';
   const links = song.links?.length
@@ -455,12 +454,43 @@ function updateReader() {
   $('readerPosition').textContent = `Nummer ${activeIndex + 1} af ${setlist.length}`;
   $('readerTitle').textContent = song.title;
   $('readerChords').innerHTML = chordLines + links + screenshots;
-  applyReaderZoom(songIndex);
+  applyReaderZoom();
+  document.querySelectorAll('[data-fullscreen-image]').forEach((button) => {
+    button.onclick = () => openImageViewer(
+      button.dataset.fullscreenImage,
+      button.querySelector('img')?.alt || song.title,
+    );
+  });
   $('readerProgressBar').style.width = `${((activeIndex + 1) / setlist.length) * 100}%`;
   $('readerPrevious').disabled = activeIndex === 0;
   $('readerNext').disabled = activeIndex === setlist.length - 1;
   renderReaderQueue();
   $('readerMain')?.scrollTo({ top: 0, behavior: 'instant' });
+}
+
+async function openImageViewer(src, alt) {
+  const viewer = $('imageViewer');
+  $('imageViewerImage').src = src;
+  $('imageViewerImage').alt = alt;
+  viewer.hidden = false;
+  viewer.setAttribute('aria-hidden', 'false');
+
+  try {
+    const request = viewer.requestFullscreen || viewer.webkitRequestFullscreen;
+    await request?.call(viewer);
+  } catch (error) {
+    // Det faste overlay fylder stadig browserens synlige skærm.
+  }
+}
+
+async function closeImageViewer() {
+  const viewer = $('imageViewer');
+  if (fullscreenElement() === viewer) {
+    const exit = document.exitFullscreen || document.webkitExitFullscreen;
+    await exit?.call(document);
+  }
+  viewer.hidden = true;
+  viewer.setAttribute('aria-hidden', 'true');
 }
 
 function navigateReader(offset) {
@@ -568,6 +598,10 @@ $('readerNext').onclick = () => {
 };
 $('zoomOut').onclick = () => changeReaderZoom(-1);
 $('zoomIn').onclick = () => changeReaderZoom(1);
+$('closeImageViewer').onclick = closeImageViewer;
+$('imageViewer').onclick = (event) => {
+  if (event.target === $('imageViewer')) closeImageViewer();
+};
 $('toggleFullscreen').onclick = toggleFullscreen;
 document.addEventListener('fullscreenchange', updateFullscreenButton);
 document.addEventListener('webkitfullscreenchange', updateFullscreenButton);
@@ -582,6 +616,10 @@ $('readerMain').addEventListener('touchmove', movePinchZoom, { passive: false })
 $('readerMain').addEventListener('touchend', finishPinchZoom, { passive: false });
 $('readerMain').addEventListener('touchcancel', finishPinchZoom, { passive: false });
 document.addEventListener('keydown', (event) => {
+  if (!$('imageViewer').hidden) {
+    if (event.key === 'Escape') closeImageViewer();
+    return;
+  }
   if ($('reader').classList.contains('hidden')) return;
   if (event.key === 'ArrowLeft') navigateReader(-1);
   if (event.key === 'ArrowRight') navigateReader(1);
