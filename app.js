@@ -1,4 +1,5 @@
 const songs = [
+  { set: '', title: 'Brudevalsen', lines: [], images: ['assets/screenshots/brudevalsen.jpg'] },
   { set: 'Sæt 1', title: 'Treasure', lines: ['Bb - G# - F - G - C'] },
   { set: 'Sæt 1', title: 'Fascination', lines: ['Intro: 2 omgange trommer', 'Vers + bro', 'A ... - F# - E - D', 'C# - D - E - F#m - Bm - E', 'Omk: E - F# - D - (C# - D - E) hurtigt', '"Word that\'s on" - F#m - A - D'] },
   { set: 'Sæt 1', title: 'Hjertet ser', lines: [], images: ['assets/screenshots/hjertet-ser-1.png', 'assets/screenshots/hjertet-ser-2.png'] },
@@ -105,10 +106,25 @@ const extraSongs = [
 songs.push(...extraSongs);
 
 const ZOOM_STORAGE_KEY = 'tempo-song-zoom-v2';
+const SONG_INDEX_SCHEMA_KEY = 'tempo-song-index-schema';
+const SONG_INDEX_SCHEMA_VERSION = '2';
 const DEFAULT_ZOOM = 0.7;
 
 let setlist = JSON.parse(localStorage.getItem('tempo-setlist') || '[]');
 let songZooms = JSON.parse(localStorage.getItem(ZOOM_STORAGE_KEY) || '{}');
+
+// Brudevalsen blev indsat som første sang. Flyt gamle gemte indeks én plads,
+// så eksisterende sætlister og sangspecifik zoom stadig rammer samme sange.
+if (localStorage.getItem(SONG_INDEX_SCHEMA_KEY) !== SONG_INDEX_SCHEMA_VERSION) {
+  setlist = setlist.map((songIndex) => Number(songIndex) + 1);
+  songZooms = Object.fromEntries(
+    Object.entries(songZooms).map(([songIndex, zoom]) => [String(Number(songIndex) + 1), zoom]),
+  );
+  localStorage.setItem('tempo-setlist', JSON.stringify(setlist));
+  localStorage.setItem(ZOOM_STORAGE_KEY, JSON.stringify(songZooms));
+  localStorage.setItem(SONG_INDEX_SCHEMA_KEY, SONG_INDEX_SCHEMA_VERSION);
+}
+
 let activeIndex = 0;
 let swipeStart = null;
 let touchSwipeStart = null;
@@ -246,7 +262,9 @@ function renderSongs() {
   const renderSongRows = (items, emptyMessage) => items.map(({ song, index }) => {
     const count = selectedCount(index);
     const setlistPosition = setlist.indexOf(index);
-    const positionLabel = setlistPosition >= 0 ? `${song.set}, sang ${setlistPosition + 1}` : song.set;
+    const positionLabel = setlistPosition >= 0
+      ? `${song.set ? `${song.set}, ` : ''}sang ${setlistPosition + 1}`
+      : song.set;
     const imageBadge = song.images?.length ? ' <span class="song-badge">Screenshot</span>' : '';
     const linkBadge = song.links?.length ? ' <span class="song-badge">Link</span>' : '';
     const selectedBadge = count ? '<span class="selected-badge">Valgt</span>' : '';
@@ -322,7 +340,7 @@ function renderSetlist() {
       <span class="drag-handle" aria-hidden="true">☷</span>
       <div class="song-meta">
         <div class="song-title">${songs[idx].title}</div>
-        <div class="song-set">${songs[idx].set}</div>
+        ${songs[idx].set ? `<div class="song-set">${songs[idx].set}</div>` : ''}
       </div>
       <div class="set-actions">
         <div class="set-move-controls" role="group" aria-label="Flyt ${songs[idx].title}">
@@ -431,7 +449,7 @@ function updateReader() {
     ? `<div class="reader-links">${song.links.map((link) => `<a href="${link.url}" target="_blank" rel="noopener noreferrer">${link.label}<span aria-hidden="true">↗</span></a>`).join('')}</div>`
     : '';
 
-  $('readerSet').textContent = `${song.set} · SPILLER NU`;
+  $('readerSet').textContent = `${song.set ? `${song.set} · ` : ''}SPILLER NU`;
   $('readerPosition').textContent = `Nummer ${activeIndex + 1} af ${setlist.length}`;
   $('readerTitle').textContent = song.title;
   $('readerChords').innerHTML = chordLines + links + screenshots;
