@@ -727,6 +727,30 @@ h2 {
   user-select: none;
 }
 
+.reader-image-crop.is-sheet-photo {
+  position: relative;
+  width: calc(var(--content-width) * 1.4286);
+  aspect-ratio: 1070 / 1870;
+  flex: 0 0 auto;
+  align-self: flex-start;
+  overflow: hidden;
+  background: #fff;
+  border: 1px solid #547467;
+  border-radius: 14px;
+  box-shadow: 0 22px 60px rgba(0, 0, 0, .2);
+}
+
+.reader-image-crop.is-sheet-photo img {
+  position: absolute;
+  inset: 0 auto auto 0;
+  width: 143.55%;
+  max-height: none;
+  transform: translate(-7.2%, -6.4%);
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
 .reader .eyebrow { color: #8ea69c; }
 
 .reader-swipe-hint {

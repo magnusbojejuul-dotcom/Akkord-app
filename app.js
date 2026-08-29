@@ -1,5 +1,5 @@
 const songs = [
-  { set: '', title: 'Brudevalsen', lines: [], images: ['assets/screenshots/brudevalsen.jpg'] },
+  { set: '', title: 'Brudevalsen', lines: [], images: ['assets/screenshots/brudevalsen.jpg'], imageMode: 'sheet-photo' },
   { set: 'Sæt 1', title: 'Treasure', lines: ['Bb - G# - F - G - C'] },
   { set: 'Sæt 1', title: 'Fascination', lines: ['Intro: 2 omgange trommer', 'Vers + bro', 'A ... - F# - E - D', 'C# - D - E - F#m - Bm - E', 'Omk: E - F# - D - (C# - D - E) hurtigt', '"Word that\'s on" - F#m - A - D'] },
   { set: 'Sæt 1', title: 'Hjertet ser', lines: [], images: ['assets/screenshots/hjertet-ser-1.png', 'assets/screenshots/hjertet-ser-2.png'] },
@@ -443,7 +443,9 @@ function updateReader() {
     ? song.lines.map((line) => `<div>${line}</div>`).join('')
     : '<div>Ingen tekstakkorder er noteret.</div>';
   const screenshots = song.images?.length
-    ? `<div class="reader-images">${song.images.map((src) => `<img src="${src}" alt="Screenshot af akkorder til ${song.title}">`).join('')}</div>`
+    ? `<div class="reader-images">${song.images.map((src) => song.imageMode === 'sheet-photo'
+      ? `<div class="reader-image-crop is-sheet-photo"><img src="${src}" alt="Screenshot af akkorder til ${song.title}"></div>`
+      : `<img src="${src}" alt="Screenshot af akkorder til ${song.title}">`).join('')}</div>`
     : '';
   const links = song.links?.length
     ? `<div class="reader-links">${song.links.map((link) => `<a href="${link.url}" target="_blank" rel="noopener noreferrer">${link.label}<span aria-hidden="true">↗</span></a>`).join('')}</div>`
