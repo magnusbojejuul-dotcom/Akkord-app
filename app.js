@@ -38,6 +38,10 @@ const songs = [
   { set: 'Sæt 3', title: 'Seven nation army + Rage', lines: ['Husk at stemme ned', 'Basgang: G - A'] },
 ];
 
+const IMAGE_DISPLAY_SCALES = {
+  'assets/screenshots/love-story-2.png': 1.55,
+};
+
 const extraSongs = [
   { set: 'Ekstranummer', group: 'extra', title: 'Bad guy', lines: ['“Lad mig høre jer sige … TEMPO”', 'Basgang'] },
   { set: 'Ekstranummer', group: 'extra', title: 'Rigtige mænd', lines: ['Em - D/F# - G - Am - D x2', 'C/E - D/F# - G - C', 'C - D - Em', 'Opgang (Jeg puster)', 'C - D - H/Eb - Em - D/F# - G - C x2', 'Omkvæd:', 'Em - D/F# - G · C - D - H/Eb - Em', 'C - D - H/Eb - Em', 'C - D - D - Em', 'Modulering:', 'Fm - G - G# - Bb - D# x2', 'F - G - G# - C#', 'C# - D# - Fm', 'F - G - G# - C# - D# - E - Fm', 'C# - D# - E - Fm', 'C# - D# - D# - Fm'] },
@@ -138,6 +142,7 @@ let activeIndex = 0;
 let swipeStart = null;
 let touchSwipeStart = null;
 let pinchGesture = null;
+let imageViewerPinchGesture = null;
 
 const $ = (id) => document.getElementById(id);
 const save = () => localStorage.setItem('tempo-setlist', JSON.stringify(setlist));
@@ -162,6 +167,7 @@ function applyReaderZoom() {
   $('zoomOut').disabled = zoom <= ZOOM_MIN;
   $('zoomIn').disabled = zoom >= ZOOM_MAX;
   $('readerMain').classList.toggle('is-zoomed', zoom > 1);
+  if (!$('imageViewer').hidden) applyImageViewerZoom();
 }
 
 function changeReaderZoom(direction) {
@@ -221,6 +227,58 @@ function finishPinchZoom(event) {
   pinchGesture = null;
   touchSwipeStart = null;
   $('readerChords').classList.remove('is-pinching');
+  event.preventDefault();
+}
+
+function applyImageViewerZoom() {
+  const zoom = getReaderZoom();
+  const scale = zoom / DEFAULT_ZOOM;
+  $('imageViewer').style.setProperty('--viewer-scale', scale);
+  $('imageViewerZoomValue').value = `${Math.round(zoom * 100)}%`;
+  $('imageViewerZoomValue').textContent = `${Math.round(zoom * 100)}%`;
+  $('imageViewerZoomOut').disabled = zoom <= ZOOM_MIN;
+  $('imageViewerZoomIn').disabled = zoom >= ZOOM_MAX;
+}
+
+function startImageViewerPinch(event) {
+  if (event.touches.length !== 2) return;
+
+  const distance = touchDistance(event.touches);
+  if (distance < 10) return;
+
+  imageViewerPinchGesture = {
+    startDistance: distance,
+    startZoom: getReaderZoom(),
+    changed: false,
+  };
+  event.preventDefault();
+}
+
+function moveImageViewerPinch(event) {
+  if (!imageViewerPinchGesture || event.touches.length !== 2) return;
+
+  const distance = touchDistance(event.touches);
+  const nextZoom = zoomFromPinch(
+    imageViewerPinchGesture.startZoom,
+    imageViewerPinchGesture.startDistance,
+    distance,
+  );
+  const roundedZoom = Number(nextZoom.toFixed(2));
+
+  if (Math.abs(getReaderZoom() - roundedZoom) >= 0.01) {
+    readerZoom = roundedZoom;
+    imageViewerPinchGesture.changed = true;
+    applyReaderZoom();
+  }
+
+  event.preventDefault();
+}
+
+function finishImageViewerPinch(event) {
+  if (!imageViewerPinchGesture || event.touches.length >= 2) return;
+
+  if (imageViewerPinchGesture.changed) saveZoom();
+  imageViewerPinchGesture = null;
   event.preventDefault();
 }
 
@@ -444,7 +502,7 @@ function updateReader() {
   const screenshots = song.images?.length
     ? `<div class="reader-images">${song.images.map((src) => song.imageMode === 'sheet-photo'
       ? `<button type="button" class="reader-image-crop is-sheet-photo" data-fullscreen-image="${src}" aria-label="Vis hele billedet til ${song.title} i fuld skærm"><img src="${src}" alt="Screenshot af akkorder til ${song.title}"><span class="reader-image-open-hint" aria-hidden="true">⛶ Vis i fuld skærm</span></button>`
-      : `<img src="${src}" alt="Screenshot af akkorder til ${song.title}">`).join('')}</div>`
+      : `<img class="${IMAGE_DISPLAY_SCALES[src] ? 'is-custom-scaled' : ''}" src="${src}" alt="Screenshot af akkorder til ${song.title}" style="--image-scale: ${IMAGE_DISPLAY_SCALES[src] || 1}">`).join('')}</div>`
     : '';
   const links = song.links?.length
     ? `<div class="reader-links">${song.links.map((link) => `<a href="${link.url}" target="_blank" rel="noopener noreferrer">${link.label}<span aria-hidden="true">↗</span></a>`).join('')}</div>`
@@ -474,6 +532,7 @@ async function openImageViewer(src, alt) {
   $('imageViewerImage').alt = alt;
   viewer.hidden = false;
   viewer.setAttribute('aria-hidden', 'false');
+  applyImageViewerZoom();
 
   try {
     const request = viewer.requestFullscreen || viewer.webkitRequestFullscreen;
@@ -481,6 +540,7 @@ async function openImageViewer(src, alt) {
   } catch (error) {
     // Det faste overlay fylder stadig browserens synlige skærm.
   }
+  setTimeout(applyImageViewerZoom, 250);
 }
 
 async function closeImageViewer() {
@@ -491,6 +551,7 @@ async function closeImageViewer() {
   }
   viewer.hidden = true;
   viewer.setAttribute('aria-hidden', 'true');
+  imageViewerPinchGesture = null;
 }
 
 function navigateReader(offset) {
@@ -598,6 +659,8 @@ $('readerNext').onclick = () => {
 };
 $('zoomOut').onclick = () => changeReaderZoom(-1);
 $('zoomIn').onclick = () => changeReaderZoom(1);
+$('imageViewerZoomOut').onclick = () => changeReaderZoom(-1);
+$('imageViewerZoomIn').onclick = () => changeReaderZoom(1);
 $('closeImageViewer').onclick = closeImageViewer;
 $('imageViewer').onclick = (event) => {
   if (event.target === $('imageViewer')) closeImageViewer();
@@ -615,6 +678,13 @@ $('readerMain').addEventListener('touchstart', startPinchZoom, { passive: false 
 $('readerMain').addEventListener('touchmove', movePinchZoom, { passive: false });
 $('readerMain').addEventListener('touchend', finishPinchZoom, { passive: false });
 $('readerMain').addEventListener('touchcancel', finishPinchZoom, { passive: false });
+$('imageViewerStage').addEventListener('touchstart', startImageViewerPinch, { passive: false });
+$('imageViewerStage').addEventListener('touchmove', moveImageViewerPinch, { passive: false });
+$('imageViewerStage').addEventListener('touchend', finishImageViewerPinch, { passive: false });
+$('imageViewerStage').addEventListener('touchcancel', finishImageViewerPinch, { passive: false });
+window.addEventListener('resize', () => {
+  if (!$('imageViewer').hidden) applyImageViewerZoom();
+});
 document.addEventListener('keydown', (event) => {
   if (!$('imageViewer').hidden) {
     if (event.key === 'Escape') closeImageViewer();

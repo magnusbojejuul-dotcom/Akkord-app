@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#0c1512">
   <title>Tempo Sætliste</title>
-  <link rel="stylesheet" href="styles.css?v=20260829-4">
+  <link rel="stylesheet" href="styles.css?v=20260829-6">
 </head>
 <body>
   <main class="app-shell">
@@ -114,9 +114,18 @@
     </div>
     <div id="imageViewer" class="image-viewer" role="dialog" aria-modal="true" aria-label="Billede i fuld skærm" aria-hidden="true" hidden>
       <button id="closeImageViewer" class="image-viewer-close" type="button" aria-label="Luk fuldskærmsbillede">Luk ×</button>
-      <img id="imageViewerImage" alt="">
+      <div id="imageViewerStage" class="image-viewer-stage">
+        <div class="image-viewer-canvas">
+          <img id="imageViewerImage" alt="">
+        </div>
+      </div>
+      <div class="image-viewer-zoom" aria-label="Zoom på fuldskærmsbillede">
+        <button id="imageViewerZoomOut" type="button" aria-label="Formindsk fuldskærmsbillede">−</button>
+        <output id="imageViewerZoomValue" aria-live="polite">70%</output>
+        <button id="imageViewerZoomIn" type="button" aria-label="Forstør fuldskærmsbillede">+</button>
+      </div>
     </div>
   </div>
-  <script src="app.js?v=20260829-4"></script>
+  <script src="app.js?v=20260829-6"></script>
 </body>
 </html>
