@@ -907,6 +907,13 @@ h2 {
   .reader article.enters-from-left { animation: none; }
 }
 
+@media (orientation: portrait) {
+  .reader-images img.is-custom-scaled {
+    width: min(calc(var(--content-width) * var(--image-scale)), 100%);
+    height: auto;
+  }
+}
+
 @media (max-width: 600px) {
   .app-shell { padding: 20px 16px 50px; }
   .hero-card { display: block; }
